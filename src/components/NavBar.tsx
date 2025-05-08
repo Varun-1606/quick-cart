@@ -78,15 +78,17 @@ const NavBar: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <Link to="/login">
-                <Button variant="outline" size="sm" className="flex items-center">
+                <Button variant="outline" size="sm" className="flex items-center hover:text-primary-600 hover:border-primary-600">
                   <User className="h-4 w-4 mr-2" />
                   <span>Login</span>
                 </Button>
               </Link>
               <Link to="/register">
-                <Button size="sm">Register</Button>
+                <Button size="sm" className="bg-primary-500 hover:bg-primary-600 text-white">
+                  Register
+                </Button>
               </Link>
             </div>
           )}
