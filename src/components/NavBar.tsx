@@ -3,7 +3,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
-import { ShoppingCart, User, LogOut, Package } from "lucide-react";
+import { ShoppingCart, User, LogOut, Package, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const NavBar: React.FC = () => {
@@ -79,6 +79,12 @@ const NavBar: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center space-x-3">
+              <Link to="/login">
+                <Button size="sm" variant="outline" className="flex items-center">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  <span>Login</span>
+                </Button>
+              </Link>
               <Link to="/register">
                 <Button size="sm" className="bg-primary-500 hover:bg-primary-600 text-white">
                   Register
