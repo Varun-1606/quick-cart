@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,18 +27,11 @@ const Index = () => {
               </p>
               <div className="flex space-x-4 animate-slide-in" style={{animationDelay: "0.2s"}}>
                 {!currentUser ? (
-                  <>
-                    <Link to="/register">
-                      <Button size="lg" className="bg-white text-primary-600 hover:bg-gray-100">
-                        Sign Up
-                      </Button>
-                    </Link>
-                    <Link to="/login">
-                      <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary-600">
-                        Login
-                      </Button>
-                    </Link>
-                  </>
+                  <Link to="/register">
+                    <Button size="lg" className="bg-white text-primary-600 hover:bg-gray-100">
+                      Sign Up
+                    </Button>
+                  </Link>
                 ) : isAdmin ? (
                   <Link to="/admin">
                     <Button size="lg" className="bg-white text-primary-600 hover:bg-gray-100">
