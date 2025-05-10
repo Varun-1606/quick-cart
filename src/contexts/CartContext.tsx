@@ -14,6 +14,8 @@ interface CartContextType {
   totalAmount: number;
   placeOrder: () => boolean;
   userOrders: Order[];
+  initiateCheckout: () => Promise<string | null>;
+  isProcessingPayment: boolean;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -23,6 +25,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { currentUser, isAdmin } = useAuth();
   const [totalItems, setTotalItems] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
   // Load cart from localStorage on mount and when user changes
   useEffect(() => {
@@ -145,6 +148,45 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+  // Initiate Stripe checkout
+  const initiateCheckout = async (): Promise<string | null> => {
+    if (isAdmin) {
+      toast.error("Admin cannot place orders");
+      return null;
+    }
+    
+    if (!currentUser) {
+      toast.error("Please login to place an order");
+      return null;
+    }
+    
+    if (cartItems.length === 0) {
+      toast.error("Your cart is empty");
+      return null;
+    }
+
+    setIsProcessingPayment(true);
+
+    try {
+      // In a real app, this would be a call to your backend to create a Stripe checkout session
+      // For this demo, we're simulating the checkout URL creation
+      
+      // Mock checkout URL (in a real app, this would come from your server)
+      const checkoutUrl = `https://checkout.stripe.com/mock-checkout?session=demo_${Date.now()}`;
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setIsProcessingPayment(false);
+      return checkoutUrl;
+    } catch (error) {
+      console.error("Payment initiation failed:", error);
+      toast.error("Failed to initiate payment process");
+      setIsProcessingPayment(false);
+      return null;
+    }
+  };
+
   // Get user orders
   const userOrders = currentUser 
     ? orders.filter(order => order.userId === currentUser.id)
@@ -160,7 +202,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       totalItems,
       totalAmount,
       placeOrder,
-      userOrders
+      userOrders,
+      initiateCheckout,
+      isProcessingPayment
     }}>
       {children}
     </CartContext.Provider>

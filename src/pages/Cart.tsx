@@ -1,28 +1,68 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { IndianRupee, Plus, Minus, Trash2 } from "lucide-react";
+import { IndianRupee, Plus, Minus, Trash2, CreditCard, Loader2, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 const Cart: React.FC = () => {
-  const { cartItems, removeFromCart, updateQuantity, totalAmount, placeOrder } = useCart();
+  const { 
+    cartItems, 
+    removeFromCart, 
+    updateQuantity, 
+    totalAmount, 
+    placeOrder, 
+    initiateCheckout, 
+    isProcessingPayment 
+  } = useCart();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('online');
 
-  const handlePlaceOrder = () => {
+  const form = useForm({
+    defaultValues: {
+      paymentMethod: 'online',
+    },
+  });
+
+  const handlePlaceOrder = async () => {
     if (!currentUser) {
       toast.error("Please login to place an order");
       navigate("/login");
       return;
     }
 
-    const success = placeOrder();
-    if (success) {
-      navigate("/orders");
+    if (paymentMethod === 'cod') {
+      // Cash on delivery
+      const success = placeOrder();
+      if (success) {
+        navigate("/orders");
+      }
+    } else {
+      // Online payment
+      const checkoutUrl = await initiateCheckout();
+      if (checkoutUrl) {
+        // In a real implementation, redirect to the Stripe checkout URL
+        toast.success("Redirecting to payment gateway...");
+        
+        // This would redirect to Stripe in a real implementation
+        // window.location.href = checkoutUrl;
+        
+        // For this demo, simulate successful payment after a delay
+        setTimeout(() => {
+          const success = placeOrder();
+          if (success) {
+            navigate("/orders");
+          }
+        }, 2000);
+      }
     }
   };
 
@@ -147,10 +187,52 @@ const Cart: React.FC = () => {
                   <span>{totalAmount.toFixed(2)}</span>
                 </div>
               </div>
+              
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="font-medium mb-3">Payment Method</h3>
+                
+                <RadioGroup 
+                  defaultValue="online"
+                  value={paymentMethod} 
+                  onValueChange={(value) => setPaymentMethod(value as 'cod' | 'online')}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="online" id="online" />
+                    <Label htmlFor="online" className="flex items-center">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Online Payment (Credit/Debit Card, UPI)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="cod" id="cod" />
+                    <Label htmlFor="cod" className="flex items-center">
+                      <ShoppingBag className="h-4 w-4 mr-2" />
+                      Cash on Delivery
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" onClick={handlePlaceOrder}>
-                Place Order
+              <Button 
+                className="w-full" 
+                onClick={handlePlaceOrder}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : paymentMethod === 'online' ? (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Pay Now
+                  </>
+                ) : (
+                  'Place Order'
+                )}
               </Button>
             </CardFooter>
           </Card>
