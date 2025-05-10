@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { orders as allOrders, Order } from "@/lib/mockData";
+import { orders as allOrders, Order, users } from "@/lib/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,12 @@ const PendingOrders: React.FC = () => {
     
     return () => clearInterval(intervalId);
   }, []);
+
+  // Helper function to get customer name from userId
+  const getCustomerName = (userId: string) => {
+    const user = users.find(user => user.id === userId);
+    return user ? user.name : `User #${userId}`;
+  };
 
   // Handle approve order
   const handleApproveOrder = () => {
@@ -185,7 +191,7 @@ const PendingOrders: React.FC = () => {
                         <TableCell>#{order.id}</TableCell>
                         <TableCell className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-gray-500" />
-                          <span>User #{order.userId}</span>
+                          <span>{getCustomerName(order.userId)}</span>
                         </TableCell>
                         <TableCell>{formatDate(order.createdAt)}</TableCell>
                         <TableCell>{order.items.length} items</TableCell>
@@ -213,8 +219,8 @@ const PendingOrders: React.FC = () => {
                               <div className="py-4 space-y-4">
                                 <div className="flex justify-between items-center">
                                   <div>
-                                    <p className="text-sm text-gray-500">Customer ID</p>
-                                    <p>#{order.userId}</p>
+                                    <p className="text-sm text-gray-500">Customer</p>
+                                    <p>{getCustomerName(order.userId)}</p>
                                   </div>
                                   <div>
                                     <p className="text-sm text-gray-500">Order Date</p>
@@ -355,7 +361,7 @@ const PendingOrders: React.FC = () => {
                           <TableCell>#{order.id}</TableCell>
                           <TableCell className="flex items-center space-x-2">
                             <User className="h-4 w-4 text-gray-500" />
-                            <span>User #{order.userId}</span>
+                            <span>{getCustomerName(order.userId)}</span>
                           </TableCell>
                           <TableCell>{formatDate(order.approvedAt || new Date())}</TableCell>
                           <TableCell>{order.items.length} items</TableCell>
@@ -414,7 +420,7 @@ const PendingOrders: React.FC = () => {
                         <TableCell>#{order.id}</TableCell>
                         <TableCell className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-gray-500" />
-                          <span>User #{order.userId}</span>
+                          <span>{getCustomerName(order.userId)}</span>
                         </TableCell>
                         <TableCell>{formatDate(order.createdAt)}</TableCell>
                         <TableCell>{formatDate(order.approvedAt || new Date())}</TableCell>
@@ -464,7 +470,7 @@ const PendingOrders: React.FC = () => {
                         <TableCell>#{order.id}</TableCell>
                         <TableCell className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-gray-500" />
-                          <span>User #{order.userId}</span>
+                          <span>{getCustomerName(order.userId)}</span>
                         </TableCell>
                         <TableCell>{formatDate(order.createdAt)}</TableCell>
                         <TableCell>{order.items.length} items</TableCell>
