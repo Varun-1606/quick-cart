@@ -19,14 +19,41 @@ const PendingOrders: React.FC = () => {
   const [approvedOrders, setApprovedOrders] = useState<Order[]>([]);
   const [deliveredOrders, setDeliveredOrders] = useState<Order[]>([]);
   const [rejectedOrders, setRejectedOrders] = useState<Order[]>([]);
+  const [remainingTimes, setRemainingTimes] = useState<Record<string, string>>({});
 
   // Filter orders by status
   useEffect(() => {
     const filterOrders = () => {
-      setPendingOrders(allOrders.filter(order => order.status === 'pending'));
-      setApprovedOrders(allOrders.filter(order => order.status === 'approved'));
-      setDeliveredOrders(allOrders.filter(order => order.status === 'delivered'));
-      setRejectedOrders(allOrders.filter(order => order.status === 'rejected'));
+      // Ensure all dates are properly converted to Date objects
+      const processedOrders = allOrders.map(order => ({
+        ...order,
+        createdAt: order.createdAt instanceof Date ? order.createdAt : new Date(order.createdAt),
+        approvedAt: order.approvedAt ? 
+          (order.approvedAt instanceof Date ? order.approvedAt : new Date(order.approvedAt)) 
+          : undefined
+      }));
+      
+      setPendingOrders(processedOrders.filter(order => order.status === 'pending'));
+      setApprovedOrders(processedOrders.filter(order => order.status === 'approved'));
+      setDeliveredOrders(processedOrders.filter(order => order.status === 'delivered'));
+      setRejectedOrders(processedOrders.filter(order => order.status === 'rejected'));
+      
+      // Calculate remaining times for approved orders
+      const times: Record<string, string> = {};
+      processedOrders
+        .filter(order => order.status === 'approved')
+        .forEach(order => {
+          if (order.approvedAt) {
+            const now = new Date();
+            const deliveryTime = new Date(order.approvedAt.getTime() + 10 * 60000); // 10 minutes
+            const remainingMs = Math.max(0, deliveryTime.getTime() - now.getTime());
+            const remainingMins = Math.floor(remainingMs / 60000);
+            const remainingSecs = Math.floor((remainingMs % 60000) / 1000);
+            times[order.id] = `${remainingMins}:${remainingSecs < 10 ? '0' : ''}${remainingSecs}`;
+          }
+        });
+      
+      setRemainingTimes(times);
     };
     
     filterOrders();
@@ -57,7 +84,10 @@ const PendingOrders: React.FC = () => {
           localStorage.setItem(`orders-${userId}`, JSON.stringify(userOrders));
         });
       }
-    }, 30000); // Check every 30 seconds
+      
+      // Update remaining times
+      filterOrders();
+    }, 1000); // Check every second for more accurate countdown
     
     return () => clearInterval(intervalId);
   }, []);
@@ -368,41 +398,31 @@ const PendingOrders: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {approvedOrders.map((order) => {
-                      // Calculate time remaining for delivery
-                      const approvalTime = order.approvedAt || new Date();
-                      const deliveryTime = new Date(approvalTime.getTime() + 10 * 60000); // 10 minutes
-                      const now = new Date();
-                      const remainingMs = deliveryTime.getTime() - now.getTime();
-                      const remainingMins = Math.max(0, Math.floor(remainingMs / 60000));
-                      const remainingSecs = Math.max(0, Math.floor((remainingMs % 60000) / 1000));
-                      
-                      return (
-                        <TableRow key={order.id}>
-                          <TableCell>#{order.id}</TableCell>
-                          <TableCell className="flex items-center space-x-2">
-                            <User className="h-4 w-4 text-gray-500" />
-                            <span>{getCustomerName(order.userId)}</span>
-                          </TableCell>
-                          <TableCell>{formatDate(order.approvedAt || new Date())}</TableCell>
-                          <TableCell>{order.items.length} items</TableCell>
-                          <TableCell className="text-right font-medium">
-                            <div className="flex items-center justify-end">
-                              <IndianRupee className="h-3 w-3 mr-1" />
-                              {order.totalAmount.toFixed(2)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Clock className="h-4 w-4 text-blue-500" />
-                              <span>
-                                {remainingMins}:{remainingSecs < 10 ? '0' : ''}{remainingSecs} remaining
-                              </span>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {approvedOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell>#{order.id}</TableCell>
+                        <TableCell className="flex items-center space-x-2">
+                          <User className="h-4 w-4 text-gray-500" />
+                          <span>{getCustomerName(order.userId)}</span>
+                        </TableCell>
+                        <TableCell>{formatDate(order.approvedAt || new Date())}</TableCell>
+                        <TableCell>{order.items.length} items</TableCell>
+                        <TableCell className="text-right font-medium">
+                          <div className="flex items-center justify-end">
+                            <IndianRupee className="h-3 w-3 mr-1" />
+                            {order.totalAmount.toFixed(2)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Clock className="h-4 w-4 text-blue-500" />
+                            <span>
+                              {remainingTimes[order.id] || '0:00'} remaining
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               )}

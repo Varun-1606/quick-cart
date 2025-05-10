@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
@@ -53,30 +52,36 @@ const Orders: React.FC = () => {
   
   // Setup countdown timer for approved orders
   useEffect(() => {
-    const timers: Record<string, number> = {};
-    
+    // Initialize timer values
+    const initialTimers: Record<string, number> = {};
     approvedOrders.forEach(order => {
       if (order.approvedAt) {
-        timers[order.id] = calculateTimeRemaining(order.approvedAt);
+        initialTimers[order.id] = calculateTimeRemaining(order.approvedAt);
       }
     });
     
-    setTimeRemaining(timers);
+    setTimeRemaining(initialTimers);
     
+    // Update timer every second
     const intervalId = setInterval(() => {
       setTimeRemaining(prev => {
         const updated = { ...prev };
+        let hasChanges = false;
         
         Object.keys(updated).forEach(orderId => {
-          updated[orderId] = Math.max(0, updated[orderId] - 1);
+          if (updated[orderId] > 0) {
+            updated[orderId] = Math.max(0, updated[orderId] - 1);
+            hasChanges = true;
+          }
         });
         
-        return updated;
+        // Only trigger a re-render if values actually changed
+        return hasChanges ? updated : prev;
       });
     }, 1000);
     
     return () => clearInterval(intervalId);
-  }, [approvedOrders]);
+  }, [approvedOrders]); // Only depend on approvedOrders to prevent infinite loop
 
   if (!currentUser) {
     return (
