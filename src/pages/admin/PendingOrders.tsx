@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +34,7 @@ const PendingOrders: React.FC = () => {
     // Check for approved orders that need to be marked as delivered (after 10 minutes)
     const intervalId = setInterval(() => {
       const now = new Date();
+      let ordersUpdated = false;
       
       allOrders.forEach(order => {
         if (
@@ -43,9 +43,20 @@ const PendingOrders: React.FC = () => {
           now.getTime() - order.approvedAt.getTime() >= 10 * 60000 // 10 minutes
         ) {
           order.status = 'delivered';
-          filterOrders(); // Refresh the filtered lists
+          ordersUpdated = true;
         }
       });
+      
+      if (ordersUpdated) {
+        filterOrders(); // Refresh the filtered lists
+        
+        // Save updated orders to localStorage for all affected users
+        const userIds = new Set(allOrders.map(order => order.userId));
+        userIds.forEach(userId => {
+          const userOrders = allOrders.filter(order => order.userId === userId);
+          localStorage.setItem(`orders-${userId}`, JSON.stringify(userOrders));
+        });
+      }
     }, 30000); // Check every 30 seconds
     
     return () => clearInterval(intervalId);
@@ -70,6 +81,11 @@ const PendingOrders: React.FC = () => {
       setPendingOrders(allOrders.filter(order => order.status === 'pending'));
       setApprovedOrders(allOrders.filter(order => order.status === 'approved'));
       
+      // Save to localStorage for the order's user
+      const userId = allOrders[orderIndex].userId;
+      const userOrders = allOrders.filter(order => order.userId === userId);
+      localStorage.setItem(`orders-${userId}`, JSON.stringify(userOrders));
+      
       toast.success(`Order #${selectedOrder.id} has been approved`);
       setIsDetailsDialogOpen(false);
     }
@@ -86,6 +102,11 @@ const PendingOrders: React.FC = () => {
       // Update filtered lists
       setPendingOrders(allOrders.filter(order => order.status === 'pending'));
       setRejectedOrders(allOrders.filter(order => order.status === 'rejected'));
+      
+      // Save to localStorage for the order's user
+      const userId = allOrders[orderIndex].userId;
+      const userOrders = allOrders.filter(order => order.userId === userId);
+      localStorage.setItem(`orders-${userId}`, JSON.stringify(userOrders));
       
       toast.success(`Order #${selectedOrder.id} has been rejected`);
       setIsDetailsDialogOpen(false);

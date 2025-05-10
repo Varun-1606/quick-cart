@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product, CartItem, Order, orders } from "../lib/mockData";
 import { useAuth } from "./AuthContext";
@@ -54,6 +53,48 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTotalItems(items);
     setTotalAmount(amount);
   }, [cartItems, currentUser, isAdmin]);
+
+  // Persist orders state to localStorage when it changes
+  useEffect(() => {
+    if (currentUser) {
+      const userOrders = orders.filter(order => order.userId === currentUser.id);
+      localStorage.setItem(`orders-${currentUser.id}`, JSON.stringify(userOrders));
+    }
+  }, [orders, currentUser]);
+
+  // Load persisted orders from localStorage when component mounts
+  useEffect(() => {
+    // This effect ensures that our mock data (orders array) has the correct order status and timestamps
+    // after page refresh by syncing it with localStorage
+    if (currentUser) {
+      const savedOrders = localStorage.getItem(`orders-${currentUser.id}`);
+      if (savedOrders) {
+        const parsedOrders = JSON.parse(savedOrders);
+        
+        // Update the global orders array with saved data
+        parsedOrders.forEach((savedOrder: Order) => {
+          const orderIndex = orders.findIndex(o => o.id === savedOrder.id);
+          if (orderIndex !== -1) {
+            // Convert string dates back to Date objects
+            const approvedAt = savedOrder.approvedAt ? new Date(savedOrder.approvedAt) : undefined;
+            orders[orderIndex] = {
+              ...savedOrder,
+              createdAt: new Date(savedOrder.createdAt),
+              approvedAt
+            };
+          } else {
+            // If order doesn't exist in orders array (might be a new one), add it
+            const processedOrder = {
+              ...savedOrder,
+              createdAt: new Date(savedOrder.createdAt),
+              approvedAt: savedOrder.approvedAt ? new Date(savedOrder.approvedAt) : undefined
+            };
+            orders.push(processedOrder);
+          }
+        });
+      }
+    }
+  }, [currentUser]);
 
   const addToCart = (product: Product, quantity = 1) => {
     if (isAdmin) {
@@ -140,6 +181,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Add order to orders array
     orders.push(newOrder);
+    
+    // Update localStorage with the new order
+    const userOrders = orders.filter(order => order.userId === currentUser.id);
+    localStorage.setItem(`orders-${currentUser.id}`, JSON.stringify(userOrders));
     
     // Clear the cart
     clearCart();
