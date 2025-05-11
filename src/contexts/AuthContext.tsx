@@ -20,13 +20,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check for existing user in localStorage on mount
   useEffect(() => {
+    // First, check if we have registered users in localStorage
+    const storedUsers = localStorage.getItem('registeredUsers');
+    if (storedUsers) {
+      try {
+        // Merge registered users with our mock data
+        const parsedUsers = JSON.parse(storedUsers);
+        
+        // Only add users that don't already exist in the users array
+        parsedUsers.forEach((user: User) => {
+          const existingUser = users.find(u => u.email === user.email);
+          if (!existingUser) {
+            users.push(user);
+          }
+        });
+      } catch (error) {
+        console.error("Error parsing stored users:", error);
+      }
+    }
+    
+    // Then check for the current user
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
         
-        // Validate that this user still exists in our users array
-        // This prevents issues if the mock data changes
+        // Validate that this user exists in our users array
+        // This will now include both mock users and registered users
         const validUser = users.find(u => u.id === user.id && u.email === user.email);
         
         if (validUser) {
@@ -75,7 +95,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: 'customer' // New users are always customers
     };
     
+    // Add to users array
     users.push(newUser);
+    
+    // Store registered users in localStorage for persistence
+    const storedUsers = localStorage.getItem('registeredUsers');
+    let registeredUsers: User[] = [];
+    
+    if (storedUsers) {
+      try {
+        registeredUsers = JSON.parse(storedUsers);
+      } catch (error) {
+        console.error("Error parsing stored users:", error);
+      }
+    }
+    
+    registeredUsers.push(newUser);
+    localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+    
+    // Set as current user
     setCurrentUser(newUser);
     setIsAdmin(false);
     localStorage.setItem('currentUser', JSON.stringify(newUser));
